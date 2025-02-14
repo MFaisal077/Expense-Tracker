@@ -3,32 +3,54 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
 public class ExpenseDAO {
-    public static void insertExpense(int userId, String category, double amount, String date, String description) {
-        String checkUserQuery = "SELECT id FROM Users WHERE id = ?";
-        String insertQuery = "INSERT INTO Expenses (user_id, category, amount, date, description) VALUES (?, ?, ?, ?, ?)";
-    
+    public static void insertExpense(String userName, String userEmail, String category, double amount, String date, String description) {
+        String checkUserQuery = "SELECT id FROM users WHERE email = ?";
+        String insertUserQuery = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+        String insertExpenseQuery = "INSERT INTO expenses (user_id, category, amount, date, description) VALUES (?, ?, ?, ?, ?)";
+
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement checkUserStmt = conn.prepareStatement(checkUserQuery);
-             PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
-    
-            // Check if user exists
-            checkUserStmt.setInt(1, userId);
+             PreparedStatement insertUserStmt = conn.prepareStatement(insertUserQuery, Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement insertExpenseStmt = conn.prepareStatement(insertExpenseQuery)) {
+
+            // Check if user already exists
+            checkUserStmt.setString(1, userEmail);
             ResultSet rs = checkUserStmt.executeQuery();
-            if (!rs.next()) {
-                System.out.println("Error: User ID " + userId + " does not exist.");
-                return;
+            int userId;
+
+            if (rs.next()) {
+                // User exists, get the user ID
+                userId = rs.getInt("id");
+                System.out.println("User already exists with ID: " + userId);
+            } else {
+                // User does not exist, create a new user
+                insertUserStmt.setString(1, userName);
+                insertUserStmt.setString(2, userEmail);
+                insertUserStmt.setString(3, "default_password"); // Default password (Should be changed in real applications)
+                insertUserStmt.executeUpdate();
+
+                // Get the newly generated user ID
+                ResultSet generatedKeys = insertUserStmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    userId = generatedKeys.getInt(1);
+                    System.out.println("New user created with ID: " + userId);
+                } else {
+                    System.out.println("Error: Failed to create user.");
+                    return;
+                }
             }
-    
-            // Insert expense
-            insertStmt.setInt(1, userId);
-            insertStmt.setString(2, category);
-            insertStmt.setDouble(3, amount);
-            insertStmt.setString(4, date);
-            insertStmt.setString(5, description);
-            insertStmt.executeUpdate();
-    
-            System.out.println("Expense added successfully!");
+
+            // Insert expense for the found/created user
+            insertExpenseStmt.setInt(1, userId);
+            insertExpenseStmt.setString(2, category);
+            insertExpenseStmt.setDouble(3, amount);
+            insertExpenseStmt.setString(4, date);
+            insertExpenseStmt.setString(5, description);
+            insertExpenseStmt.executeUpdate();
+
+            System.out.println("Expense added successfully for user ID: " + userId);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -88,7 +110,7 @@ public class ExpenseDAO {
         }
     }
     public static void main(String[] args) {
-        insertExpense(1, "Food", 15.99, "2024-02-14", "Lunch with friends");
+        insertExpense("John Doe", "john@example.com", "Food", 15.99, "2024-02-14", "Lunch with friends");
         ExpenseDAO.getExpenses();
         ExpenseDAO.updateExpense(1, "Groceries", 25.00, "2024-02-15", "Bought vegetables");
         ExpenseDAO.deleteExpense(1);

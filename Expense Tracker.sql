@@ -1,1 +1,1 @@
-create database ExpenseTracker;
+select * from users;
