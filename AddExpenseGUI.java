@@ -4,13 +4,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class AddExpenseGUI extends JFrame {
-    private JTextField userEmailField, categoryField, amountField, dateField, descriptionField;
+    private JTextField userIdField, userNameField, userEmailField, categoryField, amountField, dateField, descriptionField;
     
     public AddExpenseGUI() {
         setTitle("Add Expense");
-        setSize(400, 300);
+        setSize(400, 400); // Increased size to accommodate new fields
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLayout(new GridLayout(6, 2));
+        setLayout(new GridLayout(8, 2)); // Added two more rows for ID and name fields
+
+        add(new JLabel("User ID:"));
+        userIdField = new JTextField();
+        add(userIdField);
+
+        add(new JLabel("User Name:"));
+        userNameField = new JTextField();
+        add(userNameField);
 
         add(new JLabel("User Email:"));
         userEmailField = new JTextField();
@@ -36,13 +44,16 @@ public class AddExpenseGUI extends JFrame {
         add(addButton);
         
         addButton.addActionListener(e -> {
+            String userId = userIdField.getText();
+            String userName = userNameField.getText();
             String userEmail = userEmailField.getText();
             String category = categoryField.getText();
             double amount = Double.parseDouble(amountField.getText());
             String date = dateField.getText();
             String description = descriptionField.getText();
 
-            ExpenseDAO.insertExpense("Unknown", userEmail, category, amount, date, description);
+            // Modified to pass the user name instead of "Unknown"
+            ExpenseDAO.insertExpense(userName, userEmail, category, amount, date, description);
             JOptionPane.showMessageDialog(this, "Expense Added!");
             dispose();
         });
